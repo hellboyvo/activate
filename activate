@@ -1,0 +1,48 @@
+#!/bin/bash
+# Tis file must be used with "source .../env/wp-cli/activate" *from bash*
+# you cannot run it directly.
+_CALLED=$_
+
+# Clear the running environment
+deactivate() {
+    unset _CALLED 2>/dev/null
+    unset _SCRIPT_PATH 2>/dev/null
+    unset WPCLI_PATH 2>/dev/null
+    unset -f wp 2>/dev/null
+    unset -f deactivate 2>/dev/null
+}
+
+# Get the path of the current script and construct the executable's path
+# based on it.
+if [ "${BASH_SOURCE}" != "" ] && [ "$_CALLED" != "${BASH_SOURCE}" ]; then
+    if [ "${BASH_SOURCE:0:3}" = "../" ]; then
+        _SCRIPT_PATH=$(dirname "$_CALLED")/${BASH_SOURCE:3}
+
+    elif [ "${BASH_SOURCE:0:2}" = "./" ]; then
+        _SCRIPT_PATH=$_CALLED${BASH_SOURCE:2}
+
+    elif [ "${BASH_SOURCE:0:1}" != "/" ]; then
+        _SCRIPT_PATH=$_CALLED${BASH_SOURCE}
+
+    else
+        _SCRIPT_PATH=${BASH_SOURCE}
+    fi
+
+elif [ "$_CALLED" = "$0" ]; then
+    _SCRIPT_PATH=$0
+fi
+
+# Get current script path and base dir
+WPCLI_PATH=$(dirname "$_SCRIPT_PATH")/wp-cli.phar
+export WPCLI_PATH
+
+# Create the wp function only if the proper file exist
+if [ -f $WPCLI_PATH ] ; then
+    wp () {
+        php "$WPCLI_PATH" "$@"
+    }
+
+else
+    echo "Cannot create wp command. File $WPCLI_PATH does not exist."
+    deactivate
+fi
